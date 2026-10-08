@@ -1,103 +1,91 @@
-# key priciples
-- isolate interaction with the data from the statistical thinking so as not to burden the context window with the data
-- isolate data exploration from data modelling
-- have separate validation and critique funtionalities
-- separate the codeing from the modelling
-- the human statisticain shoud lbe desined into the loop and not ontop of the loop - these are eficneciy and cretivity enhances not replacment for the human
+# Meta-Statistician Agents: Design
 
-## Design Requirements for "Anchor in the Iterative Bayesian Workflow":
+## Purpose
 
-1. Closed-Loop Structural Lifecycle (Box's Loop)
-- The agent must not treat statistical modeling as a one-shot prompt or single generation task.
-- It must execute an iterative, closed control loop: Generative Model Building -> MCMC Parameter Sampling -> Model Criticism & Predictive Checks -> Diagnostic-Aware Refinement.
+Build an agentic statistical workflow that helps statisticians explore data, formulate and evaluate models, and produce reliable code. The system should improve the statistician's efficiency and support creative investigation; it must not replace the statistician or move them outside the decision loop.
 
-2. Decoupled Interactor–Modeler Architecture
-- Separate empirical data exploration and model checking from probabilistic program synthesis.
-- Interactor Agent: Operates inside a containerized Python/REPL sandbox to query raw data, compute summary statistics, and execute posterior predictive checks.
-- Modeler Agent: Consumes only compact, structured JSON/Markdown reports from the Interactor to generate, edit, and repair PPL code (e.g., Stan or PyMC), preventing context window saturation on large datasets.
+The initial modelling focus is prediction. Causal diagrams may be used to express hypotheses, but the system must not present causal conclusions without a separately designed causal-inference workflow.
 
-3. Automated MCMC Diagnostic Guardrails
-- Before parameter posteriors or predictive metrics can be interpreted or trusted, the system must automatically parse sampler outputs and enforce rigid health thresholds:
-  * Gelman-Rubin Statistic: Potential scale reduction factor R-hat < 1.05 (ideally < 1.01) across all parameters.
-  * Effective Sample Size: Bulk ESS > 400 and Tail ESS > 400 (or > 100 for relaxed tail bounds).
-  * Divergent Transitions: Exactly 0 divergent Hamiltonian integration steps post-warmup.
-  * Energy Diagnostics: Bayesian Fraction of Missing Information (BFMI) checks.
-- Automated Remediation: If diagnostics fail, the workflow must trigger targeted code re-parameterizations (e.g., switching centered parameterizations to non-centered funnel geometries or increasing adapt_delta).
+## Design Principles
 
-4. Out-of-Sample Predictive Validation & Model Criticism
-- Evaluate candidate specifications on held-out test data using strictly proper scoring rules, specifically Negative Log Predictive Density (NLPD) or Pareto-Smoothed Importance Sampling Leave-One-Out (PSIS-LOO / ELPD-LOO) cross-validation.
-- Pareto k Diagnostic: Verify that the shape parameter k-hat < 0.7 for all observations to ensure importance sampling stability.
-- Posterior Predictive Checks (PPCs): Simulate synthetic data from parameter posteriors and run quantitative discrepancy tests against empirical data to detect systematic misfit.
+- Keep raw data interaction separate from statistical reasoning. Pass compact, structured summaries between components instead of placing large datasets in an agent's context.
+- Separate data exploration from model construction.
+- Separate model validation from statistical critique: validation checks defined criteria, while critique examines assumptions, robustness, and limitations.
+- Separate statistical modelling from implementation and coding.
+- Keep the human statistician informed and involved in consequential choices, including evaluation strategy, diagnostic criteria, and model changes.
+- Do not optimise models against in-sample fit or significance thresholds. Use predictive evaluation appropriate to the analysis and agreed with the statistician.
 
-5. Diagnostic-Aware Refinement & Reversion
-- Automatically revert structural edits or resample likelihood/prior components if out-of-sample predictive scores worsen or MCMC diagnostics fail.
-- Progressive Model Expansion: Gradually introduce robust likelihoods (e.g., Student-t for outliers), heteroscedastic noise functions, or hierarchical partial pooling based on diagnostic feedback.
+## Workflow
 
-Primary Source URLs :
+Model development is iterative, not a one-shot generation task. The workflow follows a closed loop inspired by the Bayesian workflow:
 
-- Bayesian Workflow (Gelman et al., 2020):
-  https://arxiv.org/abs/2011.01808
+1. Explore the data and record its structure, quality, and relevant summaries.
+2. Formulate candidate hypotheses and model specifications.
+3. Generate or update probabilistic-programming code and fit the model.
+4. Check sampler health and validate predictions.
+5. Critique fit, assumptions, sensitivity, and limitations.
+6. Present findings and proposed refinements to the statistician. Apply changes only after approval, then repeat the relevant checks.
 
-- AutoStan: Autonomous Bayesian Model Improvement via Predictive Feedback (Oliver Dürr, 2026):
-  https://arxiv.org/abs/2603.27766
-  Code repository: https://github.com/tidit-ch/autostan
+Candidate refinements might include a robust likelihood (for example, Student-t errors), a model for heteroscedasticity, or hierarchical partial pooling. These are suggestions to assess in context, not automatic defaults.
 
-- Automated Statistical Model Discovery with Language Models (Michael Y. Li et al., 2024):
-  https://arxiv.org/abs/2402.17879
+## Specialised Agents
 
-- AgentBayes: Open-Ended Scientific Model Discovery (Alex Farhang et al., 2024):
-  https://arxiv.org/abs/2409.09359
+- **Orchestrator:** Routes work, moderates collaboration, tracks decisions, and ensures the statistician is consulted and kept informed.
+- **Data Interactor:** Connects to data through an appropriately isolated environment, queries it, and returns metadata and compact structured reports. It can also run approved data checks and posterior predictive checks.
+- **Data Explorer:** Performs exploratory data analysis and reports patterns, data-quality concerns, and useful visualisations.
+- **Hypothesis Generator:** Suggests candidate relationships and features. It may sketch DAGs as hypotheses, but does not infer causality from them.
+- **Statistical Modeller:** Proposes statistical model structures and priors, and generates or revises probabilistic-programming code (for example, Stan or PyMC).
+- **Model Validator:** Runs agreed validation procedures, including predictive checks and sensitivity analyses such as comparing results across records or cohorts.
+- **Statistical Critic:** Assesses assumptions, robustness, interpretation, and limitations; it should remain distinct from mechanical validation.
+- **Model Explainer:** Explains model behaviour and predictions using suitable interpretation methods, such as SHAP values, partial dependence, or feature effects. It reports method assumptions and limitations, distinguishes association from causation, and does not treat feature attribution as evidence of causal influence.
+- **Responsible AI (RAI) Reviewer:** Applies appropriate tools and agreed criteria to assess the model for responsible AI risks, including fairness, privacy, transparency, safety, and potential impacts on affected groups. It documents evidence, gaps, and mitigations for human review; an assessment is not a claim of legal or regulatory certification.
+- **Code Safety Reviewer:** Reviews Python package choices and implementation practices for security and maintainability risks, including known vulnerabilities, package provenance and licensing, unsafe APIs, and handling of data and secrets. It recommends safer alternatives and reports unresolved risks before code is run or shipped.
+- **Coder:** Implements approved analysis and supporting software, keeping implementation concerns separate from statistical decisions.
 
-- REFINESTAT: Efficient Exploration for Probabilistic Program Synthesis (Madhav Kanda et al.):
-  https://openreview.net/forum?id=8ExXncFpf6
+## Evaluation and Diagnostics
 
-- Toward Good Practices for Bayesian Data-Rich Fisheries Stock Assessments Using a Modern Statistical Workflow (Cole C. Monnahan, NOAA):
-  https://repository.library.noaa.gov/
+Evaluation strategy and diagnostic criteria are selected case by case in consultation with the statistician. The system should explain the implications of the selected approach and report the criteria used; the values below are candidate reference points, not universal hard gates.
 
----
+### Predictive evaluation
 
-## Design Requirements for "Optimize for Out-of-Sample Predictive Scoring (Avoid p-Hacking)":
-Strict Prohibition of In-Sample and Significance-Based Metrics
-System prompts and reward structures must explicitly forbid optimizing candidate models based on in-sample fit metrics (such as R-squared, training-set MSE, or raw log-likelihood) or p-value thresholds (such as p < 0.05).
-Reason: Unconstrained, iterative LLM optimization loops rewarded on in-sample fit or p-values engage in automated data dredging and p-hacking, picking up spurious correlations and misfitting noise.
-Enforce Strictly Proper Scoring Rules
-Candidate models must be evaluated and ranked exclusively using strictly proper scoring rules, primarily Negative Log Predictive Density (NLPD) or Expected Log Pointwise Predictive Density (ELPD).
-Proper scoring rules reward true, well-calibrated predictive probability distributions rather than point estimates, penalizing both predictive mean errors and miscalibrated uncertainty.
-Out-of-Sample Validation & PSIS-LOO Cross-Validation
-Held-Out Data Splits: Where possible, evaluate models by computing NLPD on a protected held-out test split.
-Within-Sample Surrogate (PSIS-LOO): When re-fitting models across N test folds is computationally prohibitive, evaluate candidates using Pareto-Smoothed Importance Sampling Leave-One-Out (PSIS-LOO / ELPD-LOO) cross-validation computed directly from log-likelihood draws.
-Stability & Outlier Diagnostics (Pareto k-hat)
-Monitor the generalized Pareto shape parameter (k-hat) for every observation during PSIS-LOO evaluation.
-Threshold: Require k-hat < 0.7 across all data points to ensure importance sampling stability.
-Action: If k-hat > 0.7 for specific observations, trigger targeted structural revisions (e.g., replacing Gaussian error models with heavy-tailed Student-t distributions or mixture likelihoods).
-Predictive Improvement Stopping Criteria
-The autonomous search loop must track out-of-sample predictive density trajectory over iterations.
-Automatically halt search when out-of-sample predictive scores cease to improve (e.g., after 3 consecutive non-improving iterations) to prevent mild test-set adaptation or overfitting to the evaluation split.
-Primary Source URLs for Copy-Pasting:
-AutoStan: Autonomous Bayesian Model Improvement via Predictive Feedback (Oliver Dürr, 2026): https://arxiv.org/abs/2603.27766 Code repository: https://github.com/tidit-ch/autostan
-Automated Statistical Model Discovery with Language Models (Michael Y. Li et al., 2024): https://arxiv.org/abs/2402.17879
-REFINESTAT: Efficient Exploration for Probabilistic Program Synthesis (Madhav Kanda et al., 2024): https://openreview.net/forum?id=8ExXncFpf6
-AgentBayes: Open-Ended Scientific Model Discovery (Alex Farhang et al., 2024): https://arxiv.org/abs/2409.09359
-Bayesian Workflow (Andrew Gelman, Aki Vehtari et al., 2020): https://arxiv.org/abs/2011.01808
-Toward Good Practices for Bayesian Data-Rich Fisheries Stock Assessments Using a Modern Statistical Workflow (Cole C. Monnahan, NOAA): https://repository.library.noaa.gov/
+- Prefer out-of-sample predictive evaluation using strictly proper scoring rules, such as negative log predictive density (NLPD) or expected log pointwise predictive density (ELPD).
+- Choose an appropriate validation strategy with the statistician. Options include a protected held-out set and Pareto-smoothed importance sampling leave-one-out cross-validation (PSIS-LOO), depending on the data, modelling goal, and computational cost.
+- Avoid repeatedly adapting a model to a final test set. Where a held-out set is used during iteration, distinguish it from a final protected test set.
+- For PSIS-LOO, report Pareto $k$ diagnostics and investigate influential observations or unstable importance sampling. A value below 0.7 is a common reference point, not a universal pass condition.
+- Use posterior predictive checks to compare simulated data with observed data using discrepancies relevant to the model and analysis question.
+- Track predictive performance across iterations. A stopping rule, such as stopping after several iterations without improvement, should be agreed with the statistician and should account for uncertainty in score differences.
 
-#Agents
-- *orchastrator*  - moderator routing and group chat moderator, ensuring the human statisticain is consulted and informed
-- *Data Interactor*: connects to the data, queries it and returns summaries and metadata, synthsises the results into a compact jason report
-- *Data Explorere* - expert in EDA
-- *Hyposieiser* - hyptohesies with variables and features could expalin the targer etc, suggest causal DAGs
-- *Statistical modeller*: forming statistical models
-- *Model evaluator*: apply tests to the model such how does it change if records or cohorts are dropped and such
-- * Statistical critiqu*: evaluator of the robustnes of the model
-- *coder*
+### Sampling diagnostics
 
-# Parallesiation
-- terminal multiplexer
+Parse and report sampler diagnostics before interpreting posterior summaries. Criteria should be chosen with the statistician for the model and use case. Reference diagnostics include:
 
+- Rank-normalised R-hat: often expected to be below 1.05, with below 1.01 a stricter target.
+- Bulk and tail effective sample sizes (ESS): values such as 400 are useful reference points, but required ESS depends on the quantity being estimated.
+- Divergent transitions after warm-up: report their count and investigate any divergences.
+- Energy diagnostics, including Bayesian fraction of missing information (BFMI).
 
-# memory management
-- simpel text files forming an analysis wiki
-- png graphs or intractable graphs, animated giffs
+When diagnostics or predictive checks raise concerns, the agents may explain likely causes and propose targeted remedies, such as a non-centred parameterisation or sampler tuning. They must obtain the statistician's approval before changing model code or adopting a revised model. Preserve the ability to compare with the previous version and report what changed.
 
-#to look at
-Stat model DSL [domain spesific languadge]
+## Execution, Memory, and Outputs
+
+- **Data execution:** A containerised Python or REPL environment is a candidate boundary for querying data and running approved checks. The sandbox and permission model remain to be decided.
+- **Analysis memory:** Keep a lightweight, human-readable analysis wiki using simple text files. Record decisions, assumptions, model versions, diagnostics, and results so that work can be resumed and reviewed.
+- **Visual outputs:** Save plots as image files and consider interactive visualisations where they aid inspection. Choose formats according to the user's workflow; animated GIFs are not a default requirement.
+- **Parallel execution:** The execution and coordination approach is undecided. A terminal multiplexer is one option to investigate.
+
+## Decisions to Resolve
+
+- Which probabilistic programming language or languages should be supported first (for example, Stan or PyMC)?
+- Should model specifications use a dedicated statistical-model DSL, and if so, which concepts should it express?
+- What sandbox, data-access permissions, and execution limits should apply to the Data Interactor?
+- What parallel execution and agent coordination mechanism should be used?
+- What report schema and visualisation formats should agents use when handing off results?
+
+## Research Sources
+
+- Gelman et al. (2020), [Bayesian Workflow](https://arxiv.org/abs/2011.01808).
+- Dürr (2026), [AutoStan: Autonomous Bayesian Model Improvement via Predictive Feedback](https://arxiv.org/abs/2603.27766); [code repository](https://github.com/tidit-ch/autostan).
+- Li et al. (2024), [Automated Statistical Model Discovery with Language Models](https://arxiv.org/abs/2402.17879).
+- Farhang et al. (2024), [AgentBayes: Open-Ended Scientific Model Discovery](https://arxiv.org/abs/2409.09359).
+- Kanda et al., [REFINESTAT: Efficient Exploration for Probabilistic Program Synthesis](https://openreview.net/forum?id=8ExXncFpf6).
+- Monnahan, NOAA, [Toward Good Practices for Bayesian Data-Rich Fisheries Stock Assessments Using a Modern Statistical Workflow](https://repository.library.noaa.gov/).
