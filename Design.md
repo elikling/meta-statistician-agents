@@ -14,17 +14,23 @@ The initial modelling focus is prediction. Causal diagrams may be used to expres
 - Separate statistical modelling from implementation and coding.
 - Keep the human statistician informed and involved in consequential choices, including evaluation strategy, diagnostic criteria, and model changes.
 - Do not optimise models against in-sample fit or significance thresholds. Use predictive evaluation appropriate to the analysis and agreed with the statistician.
+- Treat interpretability as evidence about model behaviour, not as causal explanation. Report the assumptions, scope, and limitations of interpretation methods.
+- Assess responsible AI risks throughout the workflow, from data and use-case scoping through model evaluation. Findings and mitigations inform human decisions; tool results do not by themselves establish compliance or certification.
+- Review package provenance, known vulnerabilities, licensing, and implementation risks before installing dependencies or executing generated code. Keep execution sandboxed and least-privileged, and require human approval for unresolved material risks.
+- Keep claims proportional to the evidence: distinguish predictive performance, statistical uncertainty, feature attribution, and responsible AI assessment, and communicate material limitations alongside results.
 
 ## Workflow
 
 Model development is iterative, not a one-shot generation task. The workflow follows a closed loop inspired by the Bayesian workflow:
 
-1. Explore the data and record its structure, quality, and relevant summaries.
-2. Formulate candidate hypotheses and model specifications.
-3. Generate or update probabilistic-programming code and fit the model.
-4. Check sampler health and validate predictions.
-5. Critique fit, assumptions, sensitivity, and limitations.
-6. Present findings and proposed refinements to the statistician. Apply changes only after approval, then repeat the relevant checks.
+1. Explore the data and record its structure, quality, and relevant summaries. Scope the intended use, affected groups, and potential responsible AI risks; agree which risks and evaluation criteria require attention.
+2. Formulate candidate hypotheses and model specifications. The statistician remains in the decision loop, and any causal diagrams are treated as hypotheses rather than causal findings.
+3. Select required packages and prepare the implementation. The Code Safety Reviewer checks dependency provenance, vulnerabilities, licensing, and code risks before installation or execution; unresolved material issues are escalated for human review.
+4. Generate or update probabilistic-programming code and fit the model in an appropriately isolated environment, subject to the agreed permissions and execution limits.
+5. Check sampler health and validate predictions using the agreed evaluation strategy. The Responsible AI Reviewer applies suitable tools and criteria to assess relevant risks, document evidence and gaps, and propose mitigations.
+6. Critique assumptions, robustness, sensitivity, performance, and limitations. The Model Explainer uses suitable methods to describe model behaviour and predictions, making clear that feature attributions are not causal effects and can depend on the data and method.
+7. Present results, diagnostics, explanation, RAI findings, code-safety findings, and proposed refinements to the statistician. Clearly distinguish evidence from recommendations and disclose unresolved risks.
+8. Apply model or code changes only after the statistician approves them. Repeat the checks affected by each change, preserve the previous version for comparison, and record decisions and outcomes.
 
 Candidate refinements might include a robust likelihood (for example, Student-t errors), a model for heteroscedasticity, or hierarchical partial pooling. These are suggestions to assess in context, not automatic defaults.
 
